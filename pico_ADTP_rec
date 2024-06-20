@@ -1,0 +1,97 @@
+from lora import LoRa
+from machine import Pin, SPI
+from time import sleep
+
+# SPI pins
+SCK  = 10
+MOSI = 11
+MISO = 12
+# Chip select
+CS   = 13
+
+# Receive IRQ
+RX   = 20
+
+# Setup SPI
+spi = SPI(
+    1,
+    baudrate=10000000,
+    sck=Pin(SCK, Pin.OUT, Pin.PULL_DOWN),
+    mosi=Pin(MOSI, Pin.OUT, Pin.PULL_UP),
+    miso=Pin(MISO, Pin.IN, Pin.PULL_UP),
+)
+spi.init()
+
+# Setup LoRa
+lora = LoRa(
+    spi,
+    cs=Pin(CS, Pin.OUT),
+    rx=Pin(RX, Pin.IN),
+)
+
+#intiate storage
+rcon = []
+rlist = []
+
+for i in range(92):
+    rcon.append("n")
+    rlist.append("n")
+
+print("storage ready")
+
+#define functions
+def pktcln(pkt):
+    pkt = str(pkt)
+    pkt = pkt[2:]
+    pkt = pkt[:-1]
+    ind = pkt[-2:]
+    pkt = pkt[:-2]
+    return ind, pkt
+
+def adder(con, lst, pkt, ind):
+    con[ind] = "y"
+    lst[ind] = pkt
+    
+def checker(con):
+    indx = []
+    for i in range(len(con)):
+        if con[i] == "n":
+            indx.append(i)
+    return indx
+
+def compute(lst):
+    string = ""
+    for i in lst:
+        string = string + str(i)
+    return string
+def remainer(con):
+    num = 0
+    for i in con:
+        if i == "y":
+            num += 1
+    print("recieved: " + str(num))
+
+
+
+
+# initiate comms
+print("ready2")
+sleep(0.5)
+print("ready1")
+sleep(0.5)
+print("ready")
+img = ""
+def handler(x):
+    global rcon
+    global rlist
+    ind, pkt = pktcln(x)
+    print(pkt)
+    adder(rcon, rlist, pkt, int(ind))
+    print("receieved and inserted")
+    remainer(rcon)
+    
+    
+    
+    
+lora.on_recv(handler)
+lora.recv()
